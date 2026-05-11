@@ -1,6 +1,4 @@
 package service
 
-import (
-	"context"
-	"fmt"
-)
+type ConnectionService struct {
+}

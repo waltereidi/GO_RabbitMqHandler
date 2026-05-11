@@ -2,12 +2,58 @@ package rabbitMq
 
 import (
 	"log"
+
 	"github.com/streadway/amqp"
 )
 
 type RabbitMQConfig struct {
+	Port      int
+	Host      string
+	QueueName []string
+	Username  string
+	Password  string
 }
+type Option func(*RabbitMQConfig)
 
+func WithHost(host string) Option {
+	return func(s *RabbitMQConfig) {
+		s.Host = host
+	}
+}
+func WithPort(port int) Option {
+	return func(s *RabbitMQConfig) {
+		s.Port = port
+	}
+}
+func WithQueues(queueName []string) Option {
+	return func(s *RabbitMQConfig) {
+		s.QueueName = queueName
+	}
+}
+func Username(username string) Option {
+	return func(s *RabbitMQConfig) {
+		s.Username = username
+	}
+}
+func Password(password string) Option {
+	return func(s *RabbitMQConfig) {
+		s.Password = password
+	}
+}
+func NewConnection(opts ...Option) *RabbitMQConfig {
+	s := &RabbitMQConfig{
+		Host: "localhost", // Default value
+		Port: 5672,        // Default value
+		QueueName: []string{"defaultqueue"}, // Default value
+		Username: "admin", // Default value
+		Password: "admin", // Default value],
+	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
 func (cho *RabbitMQConfig) ConfigureHost() (<-chan amqp.Delivery, error) {
 	conn, err := amqp.Dial("amqp://admin:admin@localhost:5672/")
 	cho.failOnError(err, "Erro ao conectar no RabbitMQ")
@@ -46,28 +92,4 @@ func (FoE *RabbitMQConfig) failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 	}
-}
-
-// func (hm *RabbitMQConfig) HandleMessage(msgs <-chan *amqp.Delivery) {
-// 	for d := range msgs {
-// 		log.Printf("📥 Mensagem recebida: %s", d.Body)
-
-// 		factory := &abstractFactory.GetLLMFactory{}
-// 		Ifactory := factory.CreateFactory(d.Body)
-// 		strategy := Ifactory.CreateStrategy()
-// 		strategy.Start(d.Body)
-
-// 		// ⚙️ Processamento da mensagem
-// 		err := hm.processMessage(factory, d.Body)
-// 		if err != nil {
-// 			log.Printf("❌ Erro ao processar: %s", err)
-// 			//d.Nack(false, true) // requeue
-// 			d.Ack(false)
-// 			continue
-// 		}
-
-// 		// ✅ Confirma processamento
-// 		d.Ack(false)
-// 	}
-
 }
