@@ -54,7 +54,7 @@ func Password(password string) Option {
 		s.password = password
 	}
 }
-func NewConnection(opts ...Option) *RabbitMQConfig {
+func (c *RabbitMQConfig) Configure(opts ...Option) (*RabbitMQConfig, []error) {
 	s := &RabbitMQConfig{
 		host:        "localhost",                           // Default value
 		port:        5672,                                  // Default value
@@ -66,7 +66,7 @@ func NewConnection(opts ...Option) *RabbitMQConfig {
 	for _, opt := range opts {
 		opt(s)
 	}
-	return s
+	return s, c.errors
 }
 
 func ConfigureConnection() Option {
@@ -75,7 +75,6 @@ func ConfigureConnection() Option {
 		conn, err := amqp.Dial("amqp://admin:admin@localhost:5672/")
 		rmc.failOnError(err, "Erro ao conectar no RabbitMQ")
 		defer conn.Close()
-
 		// // 📡 Canal
 		ch, err := conn.Channel()
 		rmc.failOnError(err, "Erro ao abrir canal")
@@ -117,39 +116,41 @@ func ConfigureConnection() Option {
 // 	return f
 // }
 
-func (hm *RabbitMQConfig) HandleMessage(msgs <-chan amqp.Delivery, abstractFactory interfaces.AbstractFactoryHandler) {
-	forever := make(chan bool)
+// func (hm *RabbitMQConfig) HandleMessage(msgs <-chan amqp.Delivery, abstractFactory interfaces.AbstractFactoryHandler) {
+// 	forever := make(chan bool)
 
-	for d := range msgs {
-		log.Printf("📥 Mensagem recebida: %s", d.Body)
+// 	for d := range msgs {
+// 		log.Printf("📥 Mensagem recebida: %s", d.Body)
 
-		factory, err := abstractFactory.CreateStrategy(&d.Body)
-		if err != nil {
-			hm.failOnError(err, "Erro ao obter factory")
-		}
+// 		factory, err := abstractFactory.CreateStrategy(&d.Body)
+// 		if err != nil {
+// 			hm.failOnError(err, "Erro ao obter factory")
+// 		}
 
-		strategy, err := factory.CreateStrategy(&d.Body)
-		if err != nil {
-			hm.failOnError(err, "Erro ao criar estratégia")
-		}
-		strategy.Start()
+// 		strategy, err := factory.CreateStrategy(&d.Body)
+// 		if err != nil {
+// 			hm.failOnError(err, "Erro ao criar estratégia")
+// 		}
+// 		strategy.Start()
 
-		// ⚙️ Processamento da mensagem
-		err := hm.processMessage(factory, d.Body)
-		if err != nil {
-			log.Printf("❌ Erro ao processar: %s", err)
-			//d.Nack(false, true) // requeue
-			d.Ack(false)
-			continue
-		}
+// 		// ⚙️ Processamento da mensagem
+// 		err := hm.processMessage(factory, d.Body)
 
-		// ✅ Confirma processamento
-		d.Ack(false)
+// 		if err != nil {
+// 			log.Printf("❌ Erro ao processar: %s", err)
+// 			//d.Nack(false, true) // requeue
+// 			d.Ack(false)
+// 			continue
+// 		}
 
-	}
-	<-forever
+// 		// ✅ Confirma processamento
+// 		d.Ack(false)
 
-}
+// 	}
+
+// 	<-forever
+
+// }
 
 // func (cho *RabbitMQConfig) configureHost() {
 // 	conn, err := amqp.Dial("amqp://admin:admin@localhost:5672/")
