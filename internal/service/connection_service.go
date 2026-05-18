@@ -16,10 +16,11 @@ type RabbitMQConfig struct {
 	errors      []error
 	channel     *amqp.Channel
 }
-type queueConfig struct {
-	name            string
-	abstractFactory interfaces.AbstractFactoryHandler
-}
+
+// type queueConfig struct {
+// 	name            string
+// 	abstractFactory interfaces.AbstractFactoryHandler
+// }
 
 type Option func(*RabbitMQConfig)
 
@@ -83,38 +84,38 @@ func ConfigureConnection() Option {
 	}
 }
 
-func ConfigureQueue() Option {
-	f := func(rmc *RabbitMQConfig) {
-		for _, qn := range rmc.queueConfig {
-			q, err := rmc.channel.QueueDeclare(
-				qn.name, // nome
-				true,    // durável
-				false,   // auto-delete
-				false,   // exclusiva
-				false,   // no-wait
-				nil,     // args
-			)
-			rmc.failOnError(err, "Erro ao declarar fila")
+// func ConfigureQueue() Option {
+// 	f := func(rmc *RabbitMQConfig) {
+// 		for _, qn := range rmc.queueConfig {
+// 			q, err := rmc.channel.QueueDeclare(
+// 				qn.name, // nome
+// 				true,    // durável
+// 				false,   // auto-delete
+// 				false,   // exclusiva
+// 				false,   // no-wait
+// 				nil,     // args
+// 			)
+// 			rmc.failOnError(err, "Erro ao declarar fila")
 
-			// 👂 Consumir mensagens
-			msgs, err := rmc.channel.Consume(
-				q.Name,
-				"",    // consumer
-				false, // auto-ack (false = manual)
-				false, // exclusive
-				false, // no-local
-				false, // no-wait
-				nil,   // args
-			)
-			rmc.failOnError(err, "Erro ao registrar consumer")
-			rmc.HandleMessage(msgs, qn.abstractFactory)
+// 			// 👂 Consumir mensagens
+// 			msgs, err := rmc.channel.Consume(
+// 				q.Name,
+// 				"",    // consumer
+// 				false, // auto-ack (false = manual)
+// 				false, // exclusive
+// 				false, // no-local
+// 				false, // no-wait
+// 				nil,   // args
+// 			)
+// 			rmc.failOnError(err, "Erro ao registrar consumer")
+// 			rmc.HandleMessage(msgs, qn.abstractFactory)
 
-		}
-		// // 📬 Declarar fila
+// 		}
+// 		// // 📬 Declarar fila
 
-	}
-	return f
-}
+// 	}
+// 	return f
+// }
 
 func (hm *RabbitMQConfig) HandleMessage(msgs <-chan amqp.Delivery, abstractFactory interfaces.AbstractFactoryHandler) {
 	forever := make(chan bool)
