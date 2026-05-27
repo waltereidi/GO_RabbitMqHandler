@@ -1,5 +1,10 @@
 package interfaces
 
-type GenericConsumer interface {
-	Consume() error
+import (
+	"go_rabbitmqhandler/internal/models"
+)
+
+type Consumer interface {
+	Consume(afh *AbstractFactoryHandler) error
+	GetIdentity() models.ConsumerIdentity
 }

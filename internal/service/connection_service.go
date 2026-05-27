@@ -1,107 +1,63 @@
 package service
 
 import (
+	"fmt"
 	"go_rabbitmqhandler/internal/interfaces"
 	"log"
-	"slices"
+
 	"github.com/streadway/amqp"
 )
 
 type RabbitMQConfig struct {
-	port       int
-	host       string
-	consumers  []consumers
-	username   string
-	password   string
-	errors     []error
+	consumers  []interfaces.Consumer
 	channel    []*amqp.Channel
-	publishers []publishers
+	publishers []interfaces.Publisher
 	connection *amqp.Connection
 }
 
-// type queueConfig struct {
-// 	name            string
-// 	abstractFactory interfaces.AbstractFactoryHandler
-// }
+type Option func(*RabbitMQConfig) error
 
-type Option func(*RabbitMQConfig)
+func AddConsumer(consumer interfaces.Consumer) Option {
+	return func(cfg *RabbitMQConfig) error {
+		cfg.consumers = append(cfg.consumers, consumer)
 
-func WithHost(host string) Option {
-	return func(s *RabbitMQConfig) {
-		s.host = host
+		return nil
 	}
 }
-func WithPort(port int) Option {
-	return func(s *RabbitMQConfig) {
-		s.port = port
-	}
-}
-func AddConsumer(queueName string, abstractFactory interfaces.AbstractFactoryHandler) Option {
-	return func(s *RabbitMQConfig) {
-		s.queueConfig = append(s.queueConfig,
-			queueConfig{
-				name:            queueName,
-				abstractFactory: abstractFactory,
-			},
-		)
-	}
-}
-func Username(username string) Option {
-	return func(s *RabbitMQConfig) {
-		s.username = username
-	}
-}
-func Password(password string) Option {
-	return func(s *RabbitMQConfig) {
-		s.password = password
-	}
-}
+
 func (c *RabbitMQConfig) Configure(opts ...Option) (*RabbitMQConfig, []error) {
-	s := &RabbitMQConfig{
-		host:        "localhost",                           // Default value
-		port:        5672,                                  // Default value
-		queueConfig: []queueConfig{{name: "defaultqueue"}}, // Default value
-		username:    "admin",                               // Default value
-		password:    "admin",                               // Default value],
-	}
+	s := &RabbitMQConfig{}
+	errors := []error{}
 
 	for _, opt := range opts {
 		opt(s)
+
 	}
-	return s, c.errors
+	return s, errors
 }
 
-func ConfigureConnection() Option {
-	return func(rmc *RabbitMQConfig) {
+func ConfigureConnection(host string, port string, un string, pwd string) Option {
+	return func(rmc *RabbitMQConfig) error {
 
-		conn, err := amqp.Dial("amqp://admin:admin@localhost:5672/")
+		conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", un, pwd, host, port))
 		if err != nil {
-			rmc.errors = append(rmc.errors, err)
-			rmc.failOnError(err, "Erro ao conectar no RabbitMQ")
+			return err
 		}
 		rmc.connection = conn
 
-		defer conn.Close()
-		// // 📡 Canal
-		ch, err := conn.Channel()
-		rmc.failOnError(err, "Erro ao abrir canal")
-		defer ch.Close()
-		rmc.channel = ch
+		return nil
 	}
 }
 func (rmc *RabbitMQConfig) CloseConnection() {
 	defer rmc.connection.Close()
 }
 func (rmc *RabbitMQConfig) CloseChannel(channelName string) {
-	index := slices.IndexFunc(&rmc.consumers , func(s string) bool {
-		return n > 15
-	})
 
 }
 
 func (FoE *RabbitMQConfig) failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
-		FoE.errors = append(FoE.errors, err)
+		//FoE.errors = append(FoE.errors, err)
 	}
 }
