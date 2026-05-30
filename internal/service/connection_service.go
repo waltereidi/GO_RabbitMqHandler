@@ -3,41 +3,63 @@ package service
 import (
 	"fmt"
 	"go_rabbitmqhandler/internal/interfaces"
-	"go_rabbitmqhandler/internal/service/publisher"
 	"log"
 
+	"github.com/go-playground/locales/lo"
+	"github.com/samber/lo"
 	"github.com/streadway/amqp"
 )
 
-type RabbitMQConfig struct {
-	consumers  []interfaces.Consumer
-	channel    []*amqp.Channel
-	publishers []interfaces.Publisher
+type RabbitMQConfigComposite struct {
+	channels   []ChannelConfig
 	connection *amqp.Connection
 }
+type ChannelConfig struct {
+	publishers []interfaces.Publisher
+	consumers  []interfaces.Consumer
+	channel    *amqp.Channel
+	name       string
+}
+func FindOrElse[T any](
+	items []T,
+	predicate func(T) bool,
+	orElse func() T,
+) T {
+	for _, item := range items {
+		if predicate(item) {
+			return item
+		}
+	}
 
-type Option func(*RabbitMQConfig) error
+	return orElse()
+}
 
-func AddConsumer(consumer interfaces.Consumer) Option {
-	return func(cfg *RabbitMQConfig) error {
-		cfg.consumers = append(cfg.consumers, consumer)
+func (rmc *RabbitMQConfigComposite) GetChannel(channelName string) bool {
+	channelNames := lo.pluck(rmc.channels, func(c ChannelConfig) string {
+		return c.name
+	})
+	return lo.Contains(channelNames, channelName)
+}
+
+
+func (rmc *RabbitMQConfigComposite) AddConsumer(channel string, queueName string) {
+
+}
+
+func (rmc *RabbitMQConfigComposite) AddPublisher(queueName string) {
+
+}
+func AddChannel(channelName string) Option {
+	return func(rmc *RabbitMQConfigComposite) error {
+
+		channel, err := rmc.connection.Channel("default")
 
 		return nil
 	}
 }
-func AddPublisher(queueName string) Option {
-	return func(cfg *RabbitMQConfig) error {
-		genericPublisher := &publisher.GenericPublisher{}
-		genericPublisher.SetQueueName(queueName)
 
-		cfg.publishers = append(cfg.publishers, genericPublisher)
-
-		return nil
-	}
-}
-
-func (c *RabbitMQConfig) Configure(opts ...Option) (*RabbitMQConfig, []error) {
-	s := &RabbitMQConfig{}
+func (c *RabbitMQConfigComposite) Configure(opts ...Option) (*RabbitMQConfigComposite, []error) {
+	s := &RabbitMQConfigComposite{}
 	errors := []error{}
 
 	for _, opt := range opts {
@@ -48,7 +70,7 @@ func (c *RabbitMQConfig) Configure(opts ...Option) (*RabbitMQConfig, []error) {
 }
 
 func ConfigureConnection(host string, port string, un string, pwd string) Option {
-	return func(rmc *RabbitMQConfig) error {
+	return func(rmc *RabbitMQConfigComposite) error {
 
 		conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%d/", un, pwd, host, port))
 		if err != nil {
@@ -60,14 +82,14 @@ func ConfigureConnection(host string, port string, un string, pwd string) Option
 	}
 }
 
-func (rmc *RabbitMQConfig) CloseConnection() {
+func (rmc *RabbitMQConfigComposite) CloseConnection() {
 	defer rmc.connection.Close()
 }
-func (rmc *RabbitMQConfig) CloseChannel(channelName string) {
+func (rmc *RabbitMQConfigComposite) CloseChannel(channelName string) {
 
 }
 
-func (FoE *RabbitMQConfig) failOnError(err error, msg string) {
+func (FoE *RabbitMQConfigComposite) failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 		//FoE.errors = append(FoE.errors, err)
