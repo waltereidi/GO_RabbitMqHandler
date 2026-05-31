@@ -5,21 +5,20 @@ import (
 	"go_rabbitmqhandler/internal/interfaces"
 	"log"
 
-	"github.com/go-playground/locales/lo"
-	"github.com/samber/lo"
 	"github.com/streadway/amqp"
 )
 
-type RabbitMQConfigComposite struct {
-	channels   []ChannelConfig
+type RabbitMQConfigComposite[T any] struct {
+	channels   ChannelConfig[T]
 	connection *amqp.Connection
 }
-type ChannelConfig struct {
+type ChannelConfig[T any] struct {
 	publishers []interfaces.Publisher
-	consumers  []interfaces.Consumer
+	consumers  []interfaces.Consumer[T]
 	channel    *amqp.Channel
 	name       string
 }
+
 func FindOrElse[T any](
 	items []T,
 	predicate func(T) bool,
@@ -34,19 +33,31 @@ func FindOrElse[T any](
 	return orElse()
 }
 
-func (rmc *RabbitMQConfigComposite) GetChannel(channelName string) bool {
-	channelNames := lo.pluck(rmc.channels, func(c ChannelConfig) string {
-		return c.name
-	})
-	return lo.Contains(channelNames, channelName)
+func (rmc *RabbitMQConfigComposite[T]) GetChannel(channelName string) ChannelConfig[T] {
+
+	channel := FindOrElse(
+		rmc.channels.consumers ,
+		func(p ChannelConfig[T]) bool {
+			return p.name == channelName
+		},
+		nil,
+	)
+
+	return channel
 }
 
+func (rmc *RabbitMQConfigComposite[T]) AddConsumer(channelName string,
+	queueName string,
+	abstractFactory interfaces.AbstractFactoryHandler,
+	consumer interfaces.Consumer[T] ){
 
-func (rmc *RabbitMQConfigComposite) AddConsumer(channel string, queueName string) {
+	channel := rmc.GetChannel(channelName)
+
+	channel.consumers = append(channel.consumers, abstractFactory )
 
 }
 
-func (rmc *RabbitMQConfigComposite) AddPublisher(queueName string) {
+func (rmc *RabbitMQConfigComposite[T]) AddPublisher(queueName string) {
 
 }
 func AddChannel(channelName string) Option {

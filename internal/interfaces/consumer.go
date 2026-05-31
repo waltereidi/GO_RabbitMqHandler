@@ -1,10 +1,10 @@
 package interfaces
 
 import (
-	"go_rabbitmqhandler/internal/models"
+	"github.com/streadway/amqp"
 )
 
-type Consumer interface {
-	Consume(afh *AbstractFactoryHandler) error
-	GetIdentity() models.ConsumerIdentity
+type Consumer[T any] interface {
+	Consume(afh *AbstractFactoryHandler, channel *amqp.Channel) (T, error)
+	SetQueue(queueName string)
 }
