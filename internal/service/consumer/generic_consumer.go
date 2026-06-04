@@ -2,24 +2,24 @@ package consumer
 
 import (
 	"go_rabbitmqhandler/internal/interfaces"
+	"go_rabbitmqhandler/internal/model"
 
 	"github.com/streadway/amqp"
 )
 
-type GenericConsumer[T any] struct {
-	name            string
-	abstractFactory interfaces.AbstractFactoryHandler
+type GenericConsumer struct {
+	config          model.ConsumerConfig
 	delivery        <-chan amqp.Delivery
 }
 
-func (Cc *GenericConsumer[T]) ConfigureConsumer(ch *amqp.Channel) error {
+func (Cc *GenericConsumer) ConfigureConsumer(ch *amqp.Channel) error {
 	q, err := ch.QueueDeclare(
-		Cc.name, // nome
-		true,    // durável
-		false,   // auto-delete
-		false,   // exclusiva
-		false,   // no-wait
-		nil,     // args
+		Cc.config.QueueName, // nome
+		Cc.config.Durable,                // durável
+		Cc.config.AutoDelete,               // auto-delete
+		Cc.config.Exclusive,               // exclusiva
+		Cc.config.NoWait,               // no-wait
+		Cc.config.Args,                 // args
 	)
 	if err != nil {
 		return err
@@ -27,12 +27,12 @@ func (Cc *GenericConsumer[T]) ConfigureConsumer(ch *amqp.Channel) error {
 	// 👂 Consumir mensagens
 	msgs, err := ch.Consume(
 		q.Name,
-		"",    // consumer
-		false, // auto-ack (false = manual)
-		false, // exclusive
-		false, // no-local
-		false, // no-wait
-		nil,   // args
+		Cc.config.QueueName, // nome
+		Cc.config.Durable,                // durável
+		Cc.config.AutoDelete,               // auto-delete
+		Cc.config.Exclusive,               // exclusiva
+		Cc.config.NoWait,               // no-wait
+		Cc.config.Args,                 // args
 	)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (Cc *GenericConsumer[T]) ConfigureConsumer(ch *amqp.Channel) error {
 	Cc.delivery = msgs
 }
 
-func (c *GenericConsumer[T]) Consume() {
+func (c *GenericConsumer) Consume() []byte {
 	forever := make(chan bool)
 
 	for d := range c.delivery {

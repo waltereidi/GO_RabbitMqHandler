@@ -8,15 +8,16 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type RabbitMQConfigComposite[T any] struct {
-	channel    ChannelConfig[T]
+type RabbitMQConfigComposite struct {
+	channel    ChannelConfig
 	connection *amqp.Connection
 }
-type ChannelConfig[T any] struct {
+type ChannelConfig struct {
 	publishers []interfaces.Publisher
-	consumers  []interfaces.Consumer[T]
+	consumers  []interfaces.Consumer
 	channel    *amqp.Channel
 }
+
 
 func FindOrElse[T any](
 	items []T,
@@ -32,19 +33,19 @@ func FindOrElse[T any](
 	return orElse()
 }
 
-func (rmc *RabbitMQConfigComposite[T]) AddConsumer(
+func (rmc *RabbitMQConfigComposite) AddConsumer(
 	queueName string,
 	abstractFactory interfaces.AbstractFactoryHandler,
-	consumer interfaces.Consumer[T]) {
+	consumer interfaces.Consumer) {
 
 	rmc.channel.consumers = append(rmc.channel.consumers, consumer)
 }
 
-func (rmc *RabbitMQConfigComposite[T]) AddPublisher(publisher interfaces.Publisher) {
+func (rmc *RabbitMQConfigComposite) AddPublisher(publisher interfaces.Publisher) {
 	rmc.channel.publishers = append(rmc.channel.publishers, publisher)
 }
 
-func (rmc *RabbitMQConfigComposite[T]) ConfigureConnection(host string, port int, un string, pwd string) {
+func (rmc *RabbitMQConfigComposite) ConfigureConnection(host string, port int, un string, pwd string) {
 	conn, err := amqp.Dial(fmt.Sprintf(`amqp://%s:%s@%s:%d/`,
 		un,
 		pwd,
@@ -61,11 +62,11 @@ func (rmc *RabbitMQConfigComposite[T]) ConfigureConnection(host string, port int
 	defer rmc.CloseConnection()
 }
 
-func (rmc *RabbitMQConfigComposite[T]) CloseConnection() {
+func (rmc *RabbitMQConfigComposite) CloseConnection() {
 	rmc.connection.Close()
 }
 
-func (FoE *RabbitMQConfigComposite[T]) failOnError(err error, msg string) {
+func (FoE *RabbitMQConfigComposite) failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
 		//FoE.errors = append(FoE.errors, err)

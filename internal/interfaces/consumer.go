@@ -4,7 +4,8 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type Consumer[T any] interface {
-	Consume() (T, error)
+type Consumer interface {
+	Consume() ([]byte, error)
 	SetQueue(queueName string)
+	ConfigureConsumer(ch *amqp.Channel, config models.ConsumerConfig) error
 }
