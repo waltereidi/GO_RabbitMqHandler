@@ -39,46 +39,47 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+
   app:
     build:
       context: .
-      dockerfile: Dockerfile
-
-    env_file:
-      - ./configs/development.env
-
-    volumes:
-      - .:/app
+      dockerfile: Dockerfile.dev
+      enviroment:
+        rabbitmq_username: ${rabbitmq_username}
+        rabbitmq_password: ${rabbitmq_password}
+        rabbitmq_host: ${rabbitmq_host}
+        rabbitmq_port: ${rabbitmq_port}
+        postgres_host: ${postgres_host}
+        postgres_port: ${postgres_port}
+        postgres_db: ${postgres_db}
+        postgres_user: ${postgres_user}
+        postgres_password: ${postgres_password}
+    container_name: app
 
     working_dir: /app
+
+    env_file:
+      - development.env
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+    volumes:
+      - ./app:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
 
     ports:
       - "8080:8080"
 
-    command:
-      - go
-      - run
-      - ./cmd/api
-  tests:
-    build:
-      context: .
-      dockerfile: Dockerfile
-
-    env_file:
-      - ./configs/development.env
-
-    volumes:
-      - .:/app
-
-    working_dir: /app
-
-    command:
-      - go
-      - test
-      - ./...
-      - -v
-
+    stdin_open: true
+    tty: true
 
 volumes:
+  go-mod-cache:
+  go-build-cache:
   postgres_data:
   rabbitmq_data:
