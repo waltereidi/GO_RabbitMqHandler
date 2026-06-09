@@ -64,7 +64,31 @@ func (rmc *RabbitMQConfigComposite) ConfigureConnection() {
 	rmc.failOnError(err, "Erro ao abrir canal")
 	defer rmc.CloseConnection()
 }
+func (rmc *RabbitMQConfigComposite) Start() error {
+	err = rmc.isValidConfiguration() 
+	if err != nil {
+		return err
+	}
+	for _, consumer := range rmc.channel.consumers {
+		go rmc.consumeAsync(consumer)		
+	}
+	
 
+}
+
+func (rmc *RabbitMQConfigComposite) consumeAsync(consumer interfaces.Consumer){
+	
+	consumer.Consume(rmc.channel.channel)
+
+
+}
+
+
+func (rmc *RabbitMQConfigComposite) isValidConfiguration() error {
+
+
+
+}
 func (rmc *RabbitMQConfigComposite) CloseConnection() {
 	rmc.connection.Close()
 }

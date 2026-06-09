@@ -40,7 +40,7 @@ func (Cc *GenericConsumer) ConfigureConsumer(ch *amqp.Channel) error {
 	Cc.delivery = msgs
 }
 
-func (c *GenericConsumer) Consume() []byte {
+func (c *GenericConsumer) Consume(ch *amqp.Channel){
 	forever := make(chan bool)
 
 	for d := range c.delivery {

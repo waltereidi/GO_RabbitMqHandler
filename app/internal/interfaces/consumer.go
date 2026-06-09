@@ -5,7 +5,7 @@ import (
 )
 
 type Consumer interface {
-	Consume() ([]byte, error)
+	Consume(ch *amqp.Channel) 
 	SetQueue(queueName string)
-	ConfigureConsumer(ch *amqp.Channel, config models.ConsumerConfig) error
+	ConfigureConsumer(config models.ConsumerConfig) error
 }
