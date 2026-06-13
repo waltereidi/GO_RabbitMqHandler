@@ -9,3 +9,4 @@ type Consumer interface {
 	SetQueue(queueName string)
 	ConfigureConsumer(config ConsumerConfig) error
 }
+
