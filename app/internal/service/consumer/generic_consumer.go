@@ -14,7 +14,10 @@ type GenericConsumer struct {
 	logPublisher    publisher.PublisherInterface
 }
 
-func (gC *GenericConsumer) ConfigureConsumer(ch *amqp.Channel) error {
+func (sC *GenericConsumer) SetConfiguration(config *ConsumerConfig) {
+	sC.config = *config
+}
+func (gC *GenericConsumer) configureConsumer(ch *amqp.Channel) error {
 	q, err := ch.QueueDeclare(
 		gC.config.QueueName,  // nome
 		gC.config.Durable,    // durável
@@ -23,6 +26,7 @@ func (gC *GenericConsumer) ConfigureConsumer(ch *amqp.Channel) error {
 		gC.config.NoWait,     // no-wait
 		gC.config.Args,       // args
 	)
+	println("declared queue ", gC.config.QueueName)
 	if err != nil {
 		return err
 	}
@@ -67,7 +71,8 @@ func (cP *GenericConsumer) getStrategy(message IntegrationEvent) (StrategyHandle
 }
 
 func (c *GenericConsumer) Consume(ch *amqp.Channel) {
-
+	c.configureConsumer(ch)
+	println("end consumer configuration")
 	forever := make(chan bool)
 
 	for d := range c.delivery {
@@ -75,13 +80,13 @@ func (c *GenericConsumer) Consume(ch *amqp.Channel) {
 		i := parser.NewParser()
 		model, err := i.Decode(d.Body)
 		if err != nil {
-			c.PublishErrorLog(err, ch, model)
+			c.publishErrorLog(err, ch, model)
 			continue
 		}
 
 		strategy, err := c.getStrategy(model)
 		if err != nil {
-			c.PublishErrorLog(err, ch, model)
+			c.publishErrorLog(err, ch, model)
 			continue
 		}
 
@@ -91,13 +96,13 @@ func (c *GenericConsumer) Consume(ch *amqp.Channel) {
 			model.ExchangePayload(response)
 			err := c.filterPublisher.Publish(response)
 			if err != nil {
-				c.PublishErrorLog(err, ch, model)
+				c.publishErrorLog(err, ch, model)
 				continue
 			}
 		}
 
 		if err != nil {
-			c.PublishErrorLog(err, ch, model)
+			c.publishErrorLog(err, ch, model)
 			d.Ack(true)
 			continue
 		}
@@ -109,7 +114,8 @@ func (c *GenericConsumer) Consume(ch *amqp.Channel) {
 	<-forever
 
 }
-func (gC *GenericConsumer) PublishErrorLog(err error, ch *amqp.Channel, iE IntegrationEvent) {
+
+func (gC *GenericConsumer) publishErrorLog(err error, ch *amqp.Channel, iE IntegrationEvent) {
 	logPublisher := publisher.GenericPublisher{}
 	logPublisher.SetChannel(ch, "LogQueue")
 	iE.ExchangePayload([]byte(err.Error()))

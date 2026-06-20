@@ -15,6 +15,21 @@ type ConsumerConfig struct {
 	AbstractFactory FactoryHandler
 }
 
+func NewConsumerConfig_test() ConsumerConfig {
+	return ConsumerConfig{
+		QueueName:       "test_queue",
+		Durable:         true,
+		AutoDelete:      false,
+		Exclusive:       false,
+		NoWait:          false,
+		Args:            nil,
+		AbstractFactory: nil,
+	}
+}
+func (sAf *ConsumerConfig) SetAbstractFactory(factory FactoryHandler) {
+
+}
+
 func (nCC *ConsumerConfig) NewConsumerConfig(queueName string,
 	durable bool,
 	autoDelete bool,

@@ -20,29 +20,11 @@ type ChannelConfig struct {
 	channel    *amqp.Channel
 }
 
-func FindOrElse[T any](
-	items []T,
-	predicate func(T) bool,
-	orElse func() T,
-) T {
-	for _, item := range items {
-		if predicate(item) {
-			return item
-		}
-	}
-
-	return orElse()
-}
-
 func (rmc *RabbitMQConfigComposite) AddConsumer(
 	queueName string,
 	consumer consumer.Consumer) {
 
 	rmc.channel.consumers = append(rmc.channel.consumers, consumer)
-}
-
-func (rmc *RabbitMQConfigComposite) AddPublisher(publisher publisher.PublisherInterface) {
-	rmc.channel.publishers = append(rmc.channel.publishers, publisher)
 }
 
 func (rmc *RabbitMQConfigComposite) ConfigureConnection() {
@@ -77,16 +59,19 @@ func (rmc *RabbitMQConfigComposite) Start() error {
 	}
 	return nil
 }
-
+func (rmc *RabbitMQConfigComposite) TestPublish() {
+	var publisher = publisher.GenericPublisher{}
+	publisher.SetChannel(rmc.channel.channel, "test_queue")
+	publisher.Publish([]byte("test"))
+}
 func (rmc *RabbitMQConfigComposite) consumeAsync(consumer consumer.Consumer) {
+	print("start")
+
 	consumer.Consume(rmc.channel.channel)
 }
 
 func (rmc *RabbitMQConfigComposite) isValidConfiguration() error {
 	return nil
-}
-func (rmc *RabbitMQConfigComposite) CloseConnection() {
-	rmc.connection.Close()
 }
 
 func (FoE *RabbitMQConfigComposite) failOnError(err error, msg string) {

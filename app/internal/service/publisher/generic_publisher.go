@@ -15,9 +15,6 @@ func (sC *GenericPublisher) SetChannel(channel *amqp.Channel, queueName string) 
 	sC.channel = channel
 	sC.queueName = queueName
 }
-func (sMM *GenericPublisher) SetMessageModel(queueName string) {
-
-}
 
 func (gp *GenericPublisher) Publish(message []byte) error {
 	// Implementação específica para publicar mensagem na fila
@@ -27,7 +24,7 @@ func (gp *GenericPublisher) Publish(message []byte) error {
 
 	err := gp.channel.Publish(
 		gp.queueName,
-		"",		
+		"",
 		false,
 		false,
 		GetAmqPublishingOptions(message))

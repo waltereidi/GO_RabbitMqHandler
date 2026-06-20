@@ -12,13 +12,15 @@ func TestConnectionService(t *testing.T) {
 	service.ConfigureConnection()
 	factory := TestConcreteFactory{}
 
-	event := &consumer.IntegrationEvent{
-		EventName: "TestEvent",
-	}
-	consumer.GenericConsumer()
+	consumerConfig := consumer.NewConsumerConfig_test()
+	consumerConfig.SetAbstractFactory(&factory)
 
-	service.AddConsumer("test_queue",nil)
+	genericConsumer := consumer.GenericConsumer{}
+	genericConsumer.SetConfiguration(&consumerConfig)
 
+	service.AddConsumer("test_queue", &genericConsumer)
+	service.Start()
+	service.TestPublish()
 }
 
 func TestIntegrationEvent_ExchangePayload(t *testing.T) {
@@ -66,6 +68,7 @@ type TestConcreteStrategy struct {
 }
 
 func (s *TestConcreteStrategy) Start() ([]byte, error) {
+	print("Message received")
 	return []byte("success"), nil
 }
 
