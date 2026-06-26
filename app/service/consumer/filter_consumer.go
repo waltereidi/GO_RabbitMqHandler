@@ -8,7 +8,7 @@ import (
 )
 
 type FilterConsumer struct {
-	config           ConsumerConfig
+	config           FilterConfig
 	delivery         <-chan amqp.Delivery
 	genericPublisher publisher.PublisherInterface
 	logPublisher     publisher.PublisherInterface
@@ -45,7 +45,7 @@ func (cC *FilterConsumer) configureConsumer(ch *amqp.Channel) error {
 		return err
 	}
 	cC.delivery = msgs
-	cC.setFilterPublisher(ch)
+	cC.setGenericPublisher(ch)
 	cC.setLogPublisher()
 
 	return nil
@@ -75,14 +75,17 @@ func (c *FilterConsumer) Consume(ch *amqp.Channel) {
 	forever := make(chan bool)
 
 	for d := range c.delivery {
-		// parser := parser.JsonParser[IntegrationEvent]{}
-		// i := parser.NewParser()
-		// model, err := i.Decode(d.Body)
-		// if err != nil {
-		// 	c.publishErrorLog(err, ch, model)
-		// 	continue
-		// }
+		
+		parser := parser.JsonParser[IntegrationEvent]{}
+		i := parser.NewParser()
+		model, err := i.Decode(d.Body)
+		if err != nil {
+			c.publishErrorLog(err, ch, model)
+			continue
+		}
+		iE ,err := c.config.AbstractFactory.GetQueue( &model )
 
+		 
 		// strategy, err := c.getStrategy(model)
 		// if err != nil {
 		// 	c.publishErrorLog(err, ch, model)

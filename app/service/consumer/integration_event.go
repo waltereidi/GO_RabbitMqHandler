@@ -1,5 +1,5 @@
 package consumer
-
+import "errors"
 type RabbitMQHandlerConfig struct {
 	Host            string
 	Port            int
@@ -22,9 +22,22 @@ type MetaHeader struct {
 	OccuredAt int64
 }
 
+func (gQN *MetaHeader) GetQueueName()(string, error) {
+	if(len( gQN.Args) < 1){
+		return "",errors.New("Args is not set for this meta header " + gQN.EventName)
+	}
+	for i := 0; i < len( gQN.Args); i++ {
+		if(gQN.Args[i].Key == "Queue" )
+	}
+}
+
 type Args struct {
 	Key   string
 	Value string
+}
+
+func (gNQ *IntegrationEvent) GetNextQueue(string, error) {
+
 }
 
 func (eP *IntegrationEvent) AddMetaHeader(
