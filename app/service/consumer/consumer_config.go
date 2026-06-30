@@ -14,27 +14,7 @@ type ConsumerConfig struct {
 	Args            map[string]interface{}
 	AbstractFactory FactoryHandler
 }
-type FilterConfig struct {
-	QueueName       string
-	Durable         bool
-	AutoDelete      bool
-	Exclusive       bool
-	NoWait          bool
-	Args            map[string]interface{}
-	AbstractFactory FilterFactory
-}
 
-func NewFilterConfig_test() FilterConfig {
-	return FilterConfig{
-		QueueName:       "test_queue",
-		Durable:         true,
-		AutoDelete:      false,
-		Exclusive:       false,
-		NoWait:          false,
-		Args:            nil,
-		AbstractFactory: nil,
-	}
-}
 func NewConsumerConfig_test() ConsumerConfig {
 	return ConsumerConfig{
 		QueueName:       "test_queue",
@@ -96,15 +76,6 @@ func (nCC *ConsumerConfig) NewConsumerConfig(queueName string,
 
 	if isValid != nil {
 		return isValid
-	}
-	return nil
-}
-func (iV *FilterConfig) isValid(config FilterConfig) error {
-	if isEmpty(config.QueueName) {
-		return fmt.Errorf("queue name is empty")
-	}
-	if iV.AbstractFactory == nil {
-		return fmt.Errorf("abstract factory is nil")
 	}
 	return nil
 }

@@ -8,13 +8,13 @@ import (
 )
 
 type FilterConsumer struct {
-	config           FilterConfig
+	config           ConsumerConfig
 	delivery         <-chan amqp.Delivery
 	genericPublisher publisher.PublisherInterface
 	logPublisher     publisher.PublisherInterface
 }
 
-func (sC *FilterConsumer) SetConfiguration(config *FilterConfig) {
+func (sC *FilterConsumer) SetConfiguration(config *ConsumerConfig) {
 	sC.config = *config
 }
 func (cC *FilterConsumer) configureConsumer(ch *amqp.Channel) error {
@@ -57,6 +57,15 @@ func (cP *FilterConsumer) setLogPublisher() {
 func (cP *FilterConsumer) setGenericPublisher(ch *amqp.Channel) {
 	publisher := publisher.GenericPublisher{}
 	cP.genericPublisher = &publisher
+}
+func (cP *FilterConsumer) getStrategy(message IntegrationEvent) (StrategyHandler, error) {
+	strategy, err := cP.config.AbstractFactory.CreateStrategy(&message)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return strategy, nil
 }
 
 func (c *FilterConsumer) Consume(ch *amqp.Channel) {
