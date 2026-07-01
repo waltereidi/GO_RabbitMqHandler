@@ -78,28 +78,40 @@ func (c *FilterConsumer) Consume(ch *amqp.Channel) {
 
 		parser := parser.JsonParser[IntegrationEvent]{}
 		i := parser.NewParser()
-		model, err := i.Decode(d.Body)
+		message, err := i.Decode(d.Body)
 		if err != nil {
-			c.publishErrorLog(err, ch, model)
+			c.publishErrorLog(err, ch, message)
 			continue
 		}
-		iE, err := c.config.AbstractFactory.GetQueue(&model)
+		strategy, err := c.getStrategy(message)
 		if err != nil {
-			c.publishErrorLog(err, ch, iE)
+			c.publishErrorLog(err, ch, message)
 			continue
 		}
 
-		qn, err := iE.GetNextQueue()
-
+		response, err := strategy.Start()
 		if err != nil {
-			c.publishErrorLog(err, ch, iE)
+			c.publishErrorLog(err, ch, message)
+			d.Ack(true)
 			continue
 		}
-		c.genericPublisher.SetChannel(ch, qn)
-		err = c.genericPublisher.Publish(iE.Payload)
+		nq , err := message.GetNextQueue()
+		if nq ==  "" {
+			continue
+		}
+
+		if c.genericPublisher != nil {
+			message.ExchangePayload(response)
+			c.genericPublisher.SetChannel(ch , nq )
+			err := c.genericPublisher.Publish(response)
+			if err != nil {
+				c.publishErrorLog(err, ch, message)
+				continue
+			}
+		}
 
 		if err != nil {
-			c.publishErrorLog(err, ch, model)
+			c.publishErrorLog(err, ch, message)
 			d.Ack(true)
 			continue
 		}
@@ -108,7 +120,6 @@ func (c *FilterConsumer) Consume(ch *amqp.Channel) {
 
 	}
 	<-forever
-
 }
 
 func (gC *FilterConsumer) publishErrorLog(err error, ch *amqp.Channel, iE IntegrationEvent) {

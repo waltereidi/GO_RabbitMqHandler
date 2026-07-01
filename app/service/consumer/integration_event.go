@@ -41,6 +41,12 @@ func (iE *IntegrationEvent) CreateMetaHeader(
 	}
 }
 
+func (mH *MetaHeader) AddNextQueue(
+	qn string,
+) {
+	mH.CreateArgs("QueueName", qn)
+}
+
 func (mH *MetaHeader) CreateArgs(
 	key string,
 	value string,
